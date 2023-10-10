@@ -1,8 +1,17 @@
 # WSD_PROJECT-CHATZ
 
 Step 1: npm i
-Step 2: cd frontend
-        npm i
+
+
+
+Step 2: 
+
+cd frontend
+
+npm I
+
+
+
 Step 3: npm start (both root folder, and frontend)
 
 .env file content:
