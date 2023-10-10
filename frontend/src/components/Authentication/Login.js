@@ -79,7 +79,7 @@ const Login = () => {
           placeholder="Enter Your Email Address"
           onChange={(e) => setEmail(e.target.value)}
         />
-      </FormControl>
+      </FormControl><br></br>
       <FormControl id="password" isRequired>
         <FormLabel color={"white"}>Password</FormLabel>
         <InputGroup size="md">
@@ -100,7 +100,7 @@ const Login = () => {
             </Button>
           </InputRightElement>
         </InputGroup>
-      </FormControl>
+      </FormControl><br></br>
       <Button
         fontWeight="bold"
         colorScheme="blue"

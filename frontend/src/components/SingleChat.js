@@ -4,7 +4,6 @@ import { Box, Text } from "@chakra-ui/layout";
 import "./styles.css";
 import { IconButton, Spinner, useToast } from "@chakra-ui/react";
 import { getSender, getSenderFull } from "../config/ChatLogics";
-//import { useHelper } from '../config/helper-hook';
 import { useContext, useEffect, useState } from "react";
 import axios from "axios";
 import { ArrowBackIcon } from "@chakra-ui/icons";
@@ -14,11 +13,40 @@ import UpdateGroupChatModal from "./miscellaneous/UpdateGroupChatModal";
 import ChatContext from "../Context/chat-context";
 import Lottie from "react-lottie";
 import animationData from "../animations/typing.json";
-
 import io from "socket.io-client";
 
+// Caesar Cipher Encryption
+function caesarEncrypt(text, shift) {
+  return text
+    .split("")
+    .map((char) => {
+      const code = char.charCodeAt(0);
+      if (char.match(/[a-z]/i)) {
+        const offset = char === char.toLowerCase() ? 97 : 65;
+        return String.fromCharCode(((code - offset + shift) % 26) + offset);
+      }
+      return char;
+    })
+    .join("");
+}
+
+// Caesar Cipher Decryption
+function caesarDecrypt(text, shift) {
+  return text
+    .split("")
+    .map((char) => {
+      const code = char.charCodeAt(0);
+      if (char.match(/[a-z]/i)) {
+        const offset = char === char.toLowerCase() ? 97 : 65;
+        return String.fromCharCode(((code - offset - shift + 26) % 26) + offset);
+      }
+      return char;
+    })
+    .join("");
+}
+
+
 const ENDPOINT = "http://localhost:5000"; //development
-// const ENDPOINT = "https://textalot.herokuapp.com"; //for deployment -production
 var socket, selectedChatCompare;
 
 const SingleChat = ({ fetchAgain, setFetchAgain }) => {
@@ -28,11 +56,12 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
   const [socketConnected, setSocketConnected] = useState(false);
   const [typing, setTyping] = useState(false);
   const [istyping, setIsTyping] = useState(false);
-
+  const [decypt, setDecrypt] = useState([])
   const toast = useToast();
+  const shift = 3; // Caesar cipher shift value
 
-  const { selectedChat, setSelectedChat, user, notification, setNotification } = useContext(ChatContext);
-  //console.log(selectedChat, "selectedChat in chatBox");
+  const { selectedChat, setSelectedChat, user, notification, setNotification } =
+    useContext(ChatContext);
 
   const defaultOptions = {
     loop: true,
@@ -51,22 +80,30 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
         headers: { Authorization: `Bearer ${user.token}` },
       };
 
-      setLoading(true);
+      
 
       const { data } = await axios.get(
         `/api/message/${selectedChat._id}`,
         config
       );
 
-      setMessages(data);
-      setLoading(false);
-      console.log(data, "fetched messsages of the selected chat data");
+     ;
 
+      console.log(data.length, "fetched messages of the selected chat data");
+    for(let  i = 0; i  < data.length; i++) {
+      data[i].content = caesarDecrypt(data[i].content, shift);
+      
+    }
+setLoading(true);
+  console.log(data.length)
+   setMessages(data);
+     setLoading(false);
+     setDecrypt(data)
       socket.emit("join chat", selectedChat._id);
     } catch (error) {
       console.log(error.message);
       toast({
-        title: "Error Occured!",
+        title: "Error Occurred!",
         description: "Failed to Load the Messages",
         status: "error",
         duration: 3000,
@@ -78,7 +115,6 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
 
   const sendMessage = async (event) => {
     if (event.key === "Enter" && newMessage) {
-
       socket.emit("stop typing", selectedChat._id);
 
       try {
@@ -89,28 +125,28 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
           },
         };
 
-        //async func -- wont make newMessage empty instantaneously
-        //ui enhancement -- input to be empty as soon as we hit ender/send
-        setNewMessage("");
+        // Encrypt the message with Caesar cipher before sending
+        const encryptedMessage = caesarEncrypt(newMessage, shift);
+
+        setNewMessage(""); // Clear the input field
 
         const { data } = await axios.post(
           "/api/message",
           {
-            content: newMessage,
-            chatId: selectedChat,
+            content: encryptedMessage,
+            chatId: selectedChat._id, // Corrected this line
           },
           config
         );
-
-        //setNewMessage("");
+         
         socket.emit("new message", data);
-
+        fetchMessages()
         setMessages([...messages, data]);
         console.log(data, "sent message response data");
       } catch (error) {
         console.log(error.message);
         toast({
-          title: "Error Occured!",
+          title: "Error Occurred!",
           description: "Failed to send the Message",
           status: "error",
           duration: 3000,
@@ -127,42 +163,33 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
     socket.on("connected", () => setSocketConnected(true));
     socket.on("typing", () => setIsTyping(true));
     socket.on("stop typing", () => setIsTyping(false));
-
-    // eslint-disable-next-line
   }, []);
 
   useEffect(() => {
-    fetchMessages();
-    //whwnever selctedChat changes, fetchAllMessages again for new selectedChat._id
-
-    //just to keep a track
+    fetchMessages()
     selectedChatCompare = selectedChat;
+  }, [selectedChat,]);
 
-    // eslint-disable-next-line
-  }, [selectedChat]);
-
-  //console.log(notification, 'notification Bellicon');
-
-  useEffect(() => {
-    socket.on("message recieved", (newMessageRecieved) => {
-      if ( !selectedChatCompare || selectedChatCompare._id !== newMessageRecieved.chat._id) {
-
-        // if chat is not selected or doesn't match current chat
-        if (!notification.includes(newMessageRecieved)) {
-          setNotification([newMessageRecieved, ...notification]);
-          setFetchAgain(!fetchAgain); //updating our chats in our my chats on newMessageRecieved
-          console.log(notification, "notification bell-icon check");
+    useEffect(() => {
+    socket.on("message received", (newMessageReceived) => {
+      if (
+        !selectedChatCompare ||
+        selectedChatCompare._id !== newMessageReceived.chat._id
+      ) {
+        if (!notification.includes(newMessageReceived)) {
+          setNotification([newMessageReceived, ...notification]);
+          setFetchAgain(!fetchAgain);
+        } else {
+          // Decrypt the message with Caesar cipher before displaying it
+         
         }
-      } else {
-        setMessages([...messages, newMessageRecieved]);
       }
     });
-  });
+  }, [messages, notification, newMessage]);
 
   const typingHandler = (e) => {
     setNewMessage(e.target.value);
 
-    //typing animation code
     if (!socketConnected) return;
 
     if (!typing) {
@@ -170,7 +197,6 @@ const SingleChat = ({ fetchAgain, setFetchAgain }) => {
       socket.emit("typing", selectedChat._id);
     }
 
-    //debounce/throttle function
     let lastTypingTime = new Date().getTime();
     var timerLength = 3000;
 
