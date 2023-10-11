@@ -31,7 +31,7 @@ const HomePage = () => {
         margin="3.2rem 0 1rem 0"
         p={3}
         borderRadius="lg"
-        borderColor="black"
+        borderColor="white"
         borderWidth="3px"
         w="100%"
         bg="gold.700"
@@ -44,8 +44,9 @@ const HomePage = () => {
         bg="black.50"
         w="100%"
         p={4}
+        paddingBottom={4}
         borderRadius="lg"
-        borderColor="black"
+        borderColor="white"
         borderWidth="3px"
       >
         <Tabs isFitted variant="soft-rounded" colorScheme="black">
