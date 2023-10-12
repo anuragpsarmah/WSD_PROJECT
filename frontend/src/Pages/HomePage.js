@@ -32,7 +32,7 @@ const HomePage = () => {
         p={3}
         borderRadius="lg"
         borderColor="white"
-        borderWidth="3px"
+        borderWidth="1px"
         w="100%"
         bg="gold.700"
       >
@@ -47,8 +47,8 @@ const HomePage = () => {
         paddingBottom={4}
         borderRadius="lg"
         borderColor="white"
-        borderWidth="3px"
-      >
+        borderWidth="1px"
+      ><br></br>
         <Tabs isFitted variant="soft-rounded" colorScheme="black">
           <TabList mb="1em">
             <Tab fontWeight="bold" color={"white"}>
